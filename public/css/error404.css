@@ -1,0 +1,33 @@
+body{
+    background-image: url("/img/unagi.jpg");
+    background-size: cover;
+}
+
+h1{
+    font-size: 60px;
+    color: rgb(57, 20, 76);
+}
+
+h2{
+    font-size: 40px;
+    color: rgb(98, 140, 140);
+}
+
+h3{
+    font-size: 25px;
+    color: rgb(57, 20, 76);
+}
+
+a {
+    text-decoration: none;
+    color: rgb(57, 20, 76);
+}
+
+a:hover {
+    font-size: 30px;
+}
+
+.message{
+    text-align: center;
+    width: 40%;
+}
