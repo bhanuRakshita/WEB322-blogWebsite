@@ -1,6 +1,6 @@
 const { log } = require("console");
 const fs = require("fs");
-const { resolve } = require("path");
+const path = require("path");
 
 var posts = [];
 var categories = [];
