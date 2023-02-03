@@ -7,7 +7,7 @@ var categories = [];
 
 function initialize() {
     return new Promise((resolve, reject)=>{
-        fs.readFile('./data/posts.JSON','utf8',(err, postData)=>{
+        fs.readFile(path.join(__dirname, "data", "posts.json"),'utf8',(err, postData)=>{
             if(err) reject("Unable to read file.");
             // console.log(data);
             try {
@@ -21,7 +21,7 @@ function initialize() {
                 }
               }
 
-            fs.readFile('./data/categories.JSON','utf8',(err, categoryData)=>{
+            fs.readFile(path.join(__dirname, "data", "categories.json"),'utf8',(err, categoryData)=>{
                 if(err) reject("Unable to read file.");
                 try {
                     categories = JSON.parse(categoryData);
