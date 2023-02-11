@@ -52,14 +52,50 @@ app.get("/blog", (req,res)=>{
 });
 
 app.get("/posts", (req,res)=>{
+
+    var category=req.query.category;
+    var minDate=req.query.minDate;
+
+    if (category) {
+        blogService.getPostsByCategory(category)
+        .then((postData)=>{
+            res.send(postData);
+        })
+        .catch((err)=>{
+            res.json({"message":err});
+        });
+    }
     
-    blogService.getAllPosts()
-    .then((postsData)=>{
-        res.send(postsData);
-    })
-    .catch((err)=>{
-        console.log({message:err});
-    })
+     else if (minDate) {
+        blogService.getPostsByMinDate(minDate)
+        .then((postData)=>{
+            res.send(postData);
+        })
+        .catch((err)=>{
+            res.json({"message":err});
+        });
+    }
+
+    else{
+        blogService.getAllPosts()
+        .then((postsData)=>{
+            res.send(postsData);
+        })
+        .catch((err)=>{
+            console.log({message:err});
+        });
+    }
+    
+});
+
+app.get("/post/:value", (req,res)=>{
+    blogService.getPostById(req.params.value)
+        .then((postData)=>{
+            res.send(postData);
+        })
+        .catch((err)=>{
+            res.json({"message":err});
+        });
 });
 
 app.get("/categories", (req,res)=>{
