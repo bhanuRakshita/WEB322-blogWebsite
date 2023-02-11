@@ -76,7 +76,6 @@ function getCategories(){
     })
 }
 
-<<<<<<< HEAD
 function addPost(postData){
     return new Promise((resolve, reject)=>{
         if(postData.published==undefined){
@@ -90,54 +89,6 @@ function addPost(postData){
 }
 
 module.exports = {initialize, getAllPosts, getPublishedPosts, getCategories, addPost}; 
-=======
-function getPostsByCategory(category){
-    var postsByCat=[];
-    posts.forEach(post => {
-        if (post.category==category) {
-            postsByCat.push(post);
-        }
-    })
-    return new Promise((resolve, reject)=>{
-        if (postsByCat.length==0) {
-            reject("NO results returned using category.")
-        }
-        resolve(postsByCat);
-    });
-}
-
-function getPostsByMinDate(minDateStr){
-    var postsByDate=[];
-    posts.forEach(post => {
-        if(new Date(post.postDate) >= new Date(minDateStr)){
-            postsByDate.push(post);
-        } 
-    })
-    return new Promise((resolve, reject)=>{
-        if (postsByDate.length==0) {
-            reject("NO results returned using min date.")
-        }
-        resolve(postsByDate);
-    });
-}
-
-function getPostById(id){
-    var postById;
-    posts.forEach( post =>{
-        if(id==post.id){
-            postById = post;
-        }
-    })
-    return new Promise((resolve, reject)=>{
-        if (!postById) {
-            reject("NO result returned using id")
-        }
-        resolve(postById);
-    });
-}
-
-module.exports = {initialize, getAllPosts, getPublishedPosts, getCategories, getPostsByCategory, getPostsByMinDate, getPostById}; 
->>>>>>> 113fa6d8ebd28f5eff1a82f4993eea571c86d6ae
 
 
 
