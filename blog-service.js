@@ -76,6 +76,22 @@ function getCategories(){
     })
 }
 
+function getPublishedPostsByCategory(category){
+    return new Promise((resolve, reject)=>{
+        var publishedPosts = [];
+        if(posts.length==0){
+            reject("NO results returned.")
+        }
+        posts.forEach((post)=>{
+            if(post.published == true && post.category==category){
+                publishedPosts.push(post);
+            }
+        }) 
+        
+        resolve(publishedPosts);
+    })
+}
+
 function addPost(postData){
     return new Promise((resolve, reject)=>{
         if(postData.published==undefined){
@@ -83,6 +99,8 @@ function addPost(postData){
         } else{postData.published=true;};
 
         postData.id = posts.length+1;
+        const today = new Date().getFullYear()+"-"+new Date().getMonth()+"-"+new Date().getDate();
+        postData.postDate = today;
         posts.push(postData);
         resolve(postData);
     })
@@ -133,7 +151,7 @@ function getPostById(id){
     });
 }
 
-module.exports = {initialize, getAllPosts, getPublishedPosts, getCategories, addPost, getPostsByCategory, getPostsByMinDate, getPostById}; 
+module.exports = {initialize, getAllPosts, getPublishedPosts, getCategories,getPublishedPostsByCategory, addPost, getPostsByCategory, getPostsByMinDate, getPostById}; 
 
 
 

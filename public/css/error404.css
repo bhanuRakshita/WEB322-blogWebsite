@@ -1,33 +1,33 @@
-body{
+/* body{
     background-image: url("/img/unagi.jpg");
     background-size: cover;
-}
+} */
 
-h1{
+h1 .error{
     font-size: 60px;
     color: rgb(57, 20, 76);
 }
 
-h2{
+h2 .error{
     font-size: 40px;
     color: rgb(98, 140, 140);
 }
 
-h3{
+h3 .error{
     font-size: 25px;
     color: rgb(57, 20, 76);
 }
 
-a {
+a .error{
     text-decoration: none;
     color: rgb(57, 20, 76);
 }
 
-a:hover {
+a:hover .error{
     font-size: 30px;
 }
 
-.message{
+.message .error{
     text-align: center;
     width: 40%;
 }
