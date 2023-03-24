@@ -1,15 +1,13 @@
 /*********************************************************************************
-*  WEB322 – Assignment 04
+*  WEB322 – Assignment 05
 *  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source 
 *  (including 3rd party web sites) or distributed to other students.
 * 
-*  Name: Bhanu Rakshita Paul   Student ID:143428217    Date: March 10, 2023
+*  Name: Bhanu Rakshita Paul   Student ID:143428217    Date: March 24, 2023
 *
 *  Online (Cyclic) Link: https://nutty-worm-hoodie.cyclic.app
 *
 ********************************************************************************/ 
-
-
 const express = require("express");
 var path = require("path")
 const multer = require("multer");
@@ -53,7 +51,14 @@ app.engine('.hbs', exphbs.engine({
         
         safeHTML: function(context){
             return stripJs(context);
-        }
+        },
+
+        formatDate: function(dateObj){
+            let year = dateObj.getFullYear();
+            let month = (dateObj.getMonth() + 1).toString();
+            let day = dateObj.getDate().toString();
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2,'0')}`;
+        }        
        
     }
 }));
@@ -70,6 +75,8 @@ app.use(function(req,res,next){
     app.locals.viewingCategory = req.query.category;
     next();
 });
+
+app.use(express.urlencoded({extended: true}));
 
 app.get("/", (req,res)=>{
     res.redirect("/blog");
@@ -188,7 +195,7 @@ app.get("/posts", (req,res)=>{
             res.render("posts", {posts: postData});
         })
         .catch((err)=>{
-            res.render("posts", {message: "No Results"});
+            res.render("posts", {message: err});
         });
     }
     
@@ -198,7 +205,7 @@ app.get("/posts", (req,res)=>{
             res.render("posts", {posts: postData});
         })
         .catch((err)=>{
-            res.render("posts", {message: "No Results"});
+            res.render("posts", {message: err});
         });
     }
 
@@ -208,7 +215,7 @@ app.get("/posts", (req,res)=>{
             res.render("posts", {posts: postsData});
         })
         .catch((err)=>{
-            res.render("posts", {message: "No Results"});
+            res.render("posts", {message: err});
         });
     }
     
@@ -217,10 +224,10 @@ app.get("/posts", (req,res)=>{
 app.get("/post/:value", (req,res)=>{
     blogService.getPostById(req.params.value)
         .then((postData)=>{
-            res.render("posts, {posts: postData}");
+            res.render("posts", {posts: postData});
         })
         .catch((err)=>{
-            res.json({"message":err});
+            res.render("posts", {message: err});
         });
 });
 
@@ -230,12 +237,23 @@ app.get("/categories", (req,res)=>{
         res.render("categories", {categories: categoriesData});
     })
     .catch((err)=>{
-        res.render("categories", {message: "No Results"});
+        res.render("categories", {message: err});
     })
 });
 
 app.get("/posts/add", (req, res)=>{
-    res.render(path.join(__dirname, "/views/addPost"));
+
+    blogService.getCategories()
+    .then((categoryList)=>{
+        res.render("addPost", {categories: categoryList});
+    })
+    .catch((err)=>{
+        res.render("addPost", {categories: []});
+    })
+});
+
+app.get("/categories/add", (req, res)=>{
+    res.render(path.join(__dirname, "/views/addCategory"));
 });
 
 app.post("/posts/add", upload.single("featureImage"), (req, res) => {
@@ -250,8 +268,9 @@ app.post("/posts/add", upload.single("featureImage"), (req, res) => {
                 }
                 }
             );
-    
+            
             streamifier.createReadStream(req.file.buffer).pipe(stream);
+                
         });
     };
     
@@ -264,9 +283,49 @@ app.post("/posts/add", upload.single("featureImage"), (req, res) => {
         req.body.featureImage = uploaded.url;
     
         //Process the req.body and add it as a new Blog Post before redirecting to /posts
-        blogService.addPost(req.body);
-        res.redirect("/posts");
-    });    
+        blogService.addPost(req.body)
+        .then(
+            res.redirect("/posts")
+        )
+        .catch((err)=>{
+            res.render("posts", {message:err});
+        })
+        
+    })
+    .catch((err)=>{res.send("error uploading post. ERR is: "+err)});    
+});
+
+
+
+app.post("/categories/add", (req, res) => {
+    //Process the req.body and add it as a new Blog Post before redirecting to /posts
+        blogService.addCategory(req.body)
+        .then(()=>{
+            res.redirect("/categories");
+        })
+        .catch((err)=>{
+            res.render("categories", {message: err});
+        });
+});
+
+app.get("/category/delete/:id", (req, res)=>{
+    blogService.deleteCategoryById(req.params.id)
+    .then(()=>{
+        res.redirect("/categories")
+    })
+    .catch((err)=>{
+        res.status(500).send("error: "+err)
+    });
+});
+
+app.get("/post/delete/:id", (req, res)=>{
+    blogService.deletePostById(req.params.id)
+    .then(()=>{
+        res.redirect("/posts")
+    })
+    .catch((err)=>{
+        res.status(500).send("error: "+err)
+    });
 });
 
 
