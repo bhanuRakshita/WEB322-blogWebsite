@@ -14,8 +14,10 @@ const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
 const blogService = require("./blog-service");
+const authData = require("./auth-service");
 const exphbs = require("express-handlebars");
 const stripJs = require('strip-js');
+const clientSessions = require('client-sessions');
 
 const app = express();
 
@@ -62,11 +64,26 @@ app.engine('.hbs', exphbs.engine({
        
     }
 }));
+
 app.set('view engine', '.hbs');
 
 const upload = multer(); //no disk storage
 
 app.use(express.static('public'));
+
+// Setup client-sessions
+// Setup client-sessions
+app.use(clientSessions({
+    cookieName: "session", // this is the object name that will be added to 'req'
+    secret: "web322blogapplication", // this should be a long un-guessable string.
+    duration: 2 * 60 * 1000, // duration of the session in milliseconds (2 minutes)
+    activeDuration: 1000 * 60 // the session will be extended by this many ms each request (1 minute)
+  }));
+
+  app.use(function(req, res, next) {
+    res.locals.session = req.session;
+    next();
+  });
 
 //fix navigation bar issue
 app.use(function(req,res,next){
@@ -75,6 +92,18 @@ app.use(function(req,res,next){
     app.locals.viewingCategory = req.query.category;
     next();
 });
+
+// This is a helper middleware function that checks if a user is logged in
+// we can use it in any route that we want to protect against unauthenticated access.
+// A more advanced version of this would include checks for authorization as well after
+// checking if the user is authenticated
+function ensureLogin(req, res, next) {
+    if (!req.session.user) {
+      res.redirect("/login");
+    } else {
+      next();
+    }
+  }
 
 app.use(express.urlencoded({extended: true}));
 
@@ -184,7 +213,8 @@ app.get('/blog/:id', async (req, res) => {
     res.render("blog", {data: viewData})
 });
 
-app.get("/posts", (req,res)=>{
+
+app.get("/posts", ensureLogin, (req,res)=>{
 
     var category=req.query.category;
     var minDate=req.query.minDate;
@@ -221,7 +251,7 @@ app.get("/posts", (req,res)=>{
     
 });
 
-app.get("/post/:value", (req,res)=>{
+app.get("/post/:value", ensureLogin, (req,res)=>{
     blogService.getPostById(req.params.value)
         .then((postData)=>{
             res.render("posts", {posts: postData});
@@ -231,7 +261,7 @@ app.get("/post/:value", (req,res)=>{
         });
 });
 
-app.get("/categories", (req,res)=>{
+app.get("/categories", ensureLogin, (req,res)=>{
     blogService.getCategories()
     .then((categoriesData)=>{
         res.render("categories", {categories: categoriesData});
@@ -241,7 +271,7 @@ app.get("/categories", (req,res)=>{
     })
 });
 
-app.get("/posts/add", (req, res)=>{
+app.get("/posts/add", ensureLogin, (req, res)=>{
 
     blogService.getCategories()
     .then((categoryList)=>{
@@ -252,11 +282,48 @@ app.get("/posts/add", (req, res)=>{
     })
 });
 
-app.get("/categories/add", (req, res)=>{
+app.get("/categories/add", ensureLogin, (req, res)=>{
     res.render(path.join(__dirname, "/views/addCategory"));
 });
 
-app.post("/posts/add", upload.single("featureImage"), (req, res) => {
+app.get("/category/delete/:id", ensureLogin, (req, res)=>{
+    blogService.deleteCategoryById(req.params.id)
+    .then(()=>{
+        res.redirect("/categories")
+    })
+    .catch((err)=>{
+        res.status(500).send("error: "+err)
+    });
+});
+
+app.get("/post/delete/:id", ensureLogin, (req, res)=>{
+    blogService.deletePostById(req.params.id)
+    .then(()=>{
+        res.redirect("/posts")
+    })
+    .catch((err)=>{
+        res.status(500).send("error: "+err)
+    });
+});
+
+app.get("/login", (req, res)=>{
+    res.render("login");
+});
+
+app.get("/register", (req, res)=>{
+    res.render("register");
+});
+
+app.get("/logout", (req,res)=>{
+    req.session.reset();
+    res.redirect("/");
+});
+
+app.get("/userHistory", ensureLogin, (req, res)=>{
+    req.render('userHistory');
+});
+
+app.post("/posts/add", ensureLogin, upload.single("featureImage"), (req, res) => {
     let streamUpload = (req) => {
         return new Promise((resolve, reject) => {
             let stream = cloudinary.uploader.upload_stream(
@@ -297,7 +364,7 @@ app.post("/posts/add", upload.single("featureImage"), (req, res) => {
 
 
 
-app.post("/categories/add", (req, res) => {
+app.post("/categories/add", ensureLogin, (req, res) => {
     //Process the req.body and add it as a new Blog Post before redirecting to /posts
         blogService.addCategory(req.body)
         .then(()=>{
@@ -308,32 +375,43 @@ app.post("/categories/add", (req, res) => {
         });
 });
 
-app.get("/category/delete/:id", (req, res)=>{
-    blogService.deleteCategoryById(req.params.id)
-    .then(()=>{
-        res.redirect("/categories")
+app.post("/register", (req, res) => {
+    authData.registerUser(req.body)
+    .then(() => {
+      res.render('register', { successMessage: 'User created' });
     })
-    .catch((err)=>{
-        res.status(500).send("error: "+err)
+    .catch((err) => {
+      res.render('register', { errorMessage: err, userName: req.body.userName });
     });
-});
+ })
 
-app.get("/post/delete/:id", (req, res)=>{
-    blogService.deletePostById(req.params.id)
-    .then(()=>{
-        res.redirect("/posts")
+app.post("/login", (req, res) => {
+  req.body.userAgent = req.get('User-Agent');
+  authData.checkUser(req.body)
+    .then((user) => {
+      req.session.user = {
+        userName: user.userName,
+        email: user.email,
+        loginHistory: user.loginHistory
+      };
+      res.redirect('/posts');
     })
-    .catch((err)=>{
-        res.status(500).send("error: "+err)
+    .catch((err) => {
+      res.render('login', {errorMessage: err, userName: req.body.userName});
     });
-});
+})
+
 
 
 app.use((req,res) => {
     res.status(404).render(path.join(__dirname, "/views/notFound")); 
 });
 
-blogService.initialize().then(
+blogService.initialize()
+.then(
+    authData.initialize()
+)
+.then(
     app.listen(HTTP_PORT, (req,res)=>{
         console.log("Express http server listening on "+ HTTP_PORT);
     })
